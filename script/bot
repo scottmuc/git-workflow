@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+
+set -e
+
+function add_file_to_repo() {
+  REPO=$1
+  NAME=$2
+  pushd $REPO > /dev/null
+  NEW_FILE=`mktemp ${REPO}/${NAME}.XXXXX` > /dev/null
+  git add . > /dev/null
+  git commit -m"${NAME} adding ${NEW_FILE}" > /dev/null 2>&1
+  popd > /dev/null
+}
+
+function start_bot() {
+  WORKSPACE=$1
+  UPSTREAM_REPO=$2
+  BOT_NAME=$3
+  BOT_REPO=${WORKSPACE}/${BOT_NAME}
+  git clone --origin upstream ${UPSTREAM_REPO} ${BOT_REPO} > /dev/null 2>&1
+
+  pushd ${BOT_REPO} > /dev/null
+  git config user.name "${BOT_NAME}" > /dev/null
+  git config user.email ${BOT_NAME}@botnet.com > /dev/null
+
+  git checkout -b ${BOT_NAME} > /dev/null 2>&1
+
+  add_file_to_repo $BOT_REPO $BOT_NAME
+  add_file_to_repo $BOT_REPO $BOT_NAME
+  add_file_to_repo $BOT_REPO $BOT_NAME
+
+  git checkout master > /dev/null 2>&1
+  git merge --no-edit ${BOT_NAME} --no-ff > /dev/null
+  git push -u upstream master > /dev/null 2>&1
+
+  git checkout ${BOT_NAME} > /dev/null 2>&1
+  git rebase master ${BOT_NAME} > /dev/null 2>&1
+  add_file_to_repo $BOT_REPO $BOT_NAME
+  add_file_to_repo $BOT_REPO $BOT_NAME
+  add_file_to_repo $BOT_REPO $BOT_NAME
+
+  git checkout master > /dev/null 2>&1
+  git merge --no-edit ${BOT_NAME} --no-ff > /dev/null
+  git push -u upstream master > /dev/null 2>&1
+  popd > /dev/null
+}
+
+function main() {
+  start_bot $1 $2 $3
+}
+
+main $1 $2 $3
+
